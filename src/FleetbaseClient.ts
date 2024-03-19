@@ -1,15 +1,13 @@
 import axios, { AxiosInstance } from 'axios';
+import { FleetbaseRegistryAuthConfig } from './config';
 
 export interface IFleetbaseClient extends AxiosInstance {}
 
-export const createFleetbaseClient = (): IFleetbaseClient => {
-    const fleetbaseHost = process.env.FLEETBASE_HOST;
-    const fleetbaseApiKey = process.env.FLEETBASE_API_KEY;
-
+export const createFleetbaseClient = (config: FleetbaseRegistryAuthConfig): IFleetbaseClient => {
     const instance = axios.create({
-        baseURL: fleetbaseHost,
+        baseURL: `${config.fleetbaseHost}/~registry/v1/`,
         headers: {
-            Authorization: `Bearer ${fleetbaseApiKey}`,
+            Authorization: `Bearer ${config.fleetbaseApiKey}`,
             'Content-Type': 'application/json',
         },
     });
