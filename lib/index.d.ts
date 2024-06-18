@@ -8,6 +8,6 @@ export default class FleetbaseAuthPlugin implements IPluginAuth<Config> {
     constructor(config: Config, options: any);
     authenticate(identity: string, password: string, callback: Callback): Promise<void>;
     adduser(identity: string, password: string, callback: Callback): Promise<void>;
-    allow_access(user: RemoteUser, pkg: (Config & PackageAccess) | (AllowAccess & PackageAccess), cb: AuthAccessCallback): void;
-    allow_publish(user: RemoteUser, pkg: PackageAccess, cb: Callback): void;
+    allow_access(user: RemoteUser, pkg: (Config & PackageAccess) | (AllowAccess & PackageAccess), callback: AuthAccessCallback): Promise<void>;
+    allow_publish(user: RemoteUser, pkg: PackageAccess, callback: Callback): Promise<void>;
 }
