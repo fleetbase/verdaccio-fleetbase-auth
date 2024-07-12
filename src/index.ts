@@ -69,7 +69,7 @@ export default class FleetbaseAuthPlugin implements IPluginAuth<Config> {
         this.logger.debug({ pkg }, 'Auth::allow_access() - Package: @{pkg}');
         try {
             const response = await this.fleetbaseClient.post('auth/check-access', { identity: user.name });
-            this.logger.debug({ response }, 'Auth::allow_access() - Response from Fleetbase: @{response}');
+            this.logger.debug({ response: response.data }, 'Auth::allow_access() - Response from Fleetbase: @{response}');
             const { allowed } = response.data;
             this.logger.debug({ allowed }, 'Auth::allow_access() - Allowed: @{allowed}');
 
@@ -89,7 +89,7 @@ export default class FleetbaseAuthPlugin implements IPluginAuth<Config> {
         this.logger.debug({ pkg }, 'Auth::allow_publish() - Package: @{pkg}');
         try {
             const response = await this.fleetbaseClient.post('auth/check-publish', { identity: user.name, package: pkg.name });
-            this.logger.debug({ response }, 'Auth::allow_publish() - Response from Fleetbase: @{response}');
+            this.logger.debug({ response: response.data }, 'Auth::allow_publish() - Response from Fleetbase: @{response}');
             const { allowed } = response.data;
             this.logger.debug({ allowed }, 'Auth::allow_publish() - Allowed: @{allowed}');
 
