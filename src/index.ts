@@ -82,7 +82,7 @@ export default class FleetbaseAuthPlugin implements IPluginAuth<Config> {
         }
     }
 
-    public async allow_publish(user: RemoteUser, pkg: PackageAccess, callback: Callback): Promise<void> {
+    public async allow_publish(user: RemoteUser, pkg: (Config & PackageAccess) | (AllowAccess & PackageAccess), callback: Callback): Promise<void> {
         // Allow publish should check with Fleetbase API for the extension and check the status for approved
         // After publish registry should update the extension as published
         this.logger.debug({ user }, 'Auth::allow_publish() - User: @{user}');
