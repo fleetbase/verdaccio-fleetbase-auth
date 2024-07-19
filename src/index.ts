@@ -10,24 +10,24 @@ export default class FleetbaseAuthPlugin implements IPluginAuth<Config> {
     private config: FleetbaseRegistryAuthConfig;
     private fleetbaseClient: IFleetbaseClient;
     private logger: Logger;
+    private protectedPrefixes: string;
+    private defaultProtectedPrefixes: string = '@fleetbase,fleetbase,@flb,@fleetbase-extension,@flb-extension';
 
     public constructor(config: Config, options: any) {
         this.config = Object.assign(config, config.auth['@fleetbase/verdaccio-fleetbase-auth']);
         this.logger = options.logger;
-        this.logger.debug(
-            {
-                config: JSON.stringify(
-                    {
-                        fleetbaseHost: getConfigValue('FLEETBASE_HOST', this.config),
-                        fleetbaseApiKey: getConfigValue('FLEETBASE_API_KEY', this.config),
-                    },
-                    null,
-                    4
-                ),
-            },
-            'FLEETBASE CLIENT ENV/CONFIG VARS: @{config}'
-        );
         this.fleetbaseClient = createFleetbaseClient(this.config);
+        this.protectedPrefixes = getConfigValue('PROTECTED_PREFIXES', this.config) ?? '@fleetbase,fleetbase,@flb,@fleetbase-extension,@flb-extension';
+    }
+
+    public isNotProtectedPackage(packageName: string): boolean {
+        const prefixes = this.protectedPrefixes.split(',');
+        for (const prefix of prefixes) {
+            if (packageName.startsWith(prefix)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public async authenticate(identity: string, password: string, callback: Callback): Promise<void> {
@@ -37,9 +37,9 @@ export default class FleetbaseAuthPlugin implements IPluginAuth<Config> {
             const response = await this.fleetbaseClient.post('auth/authenticate', { identity, password });
             this.logger.debug({ response: response.data }, 'Auth::authenticate() - Response from Fleetbase: @{response}');
             const { groups } = response.data;
-            this.logger.debug({ groups: JSON.stringify(groups) }, 'Auth::authenticate() -Groups: @{groups}');
+            this.logger.debug({ groups: JSON.stringify(groups) }, 'Auth::authenticate() - Groups: @{groups}');
 
-            callback(null, groups ?? []);
+            callback(null, groups);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Authentication failed for creating developer account';
             const conflict = getConflict(errorMessage);
@@ -67,8 +67,21 @@ export default class FleetbaseAuthPlugin implements IPluginAuth<Config> {
         // Allow access should check with Fleetbase API and see that registry user has access to the extension
         this.logger.debug({ user }, 'Auth::allow_access() - User: @{user}');
         this.logger.debug({ pkg }, 'Auth::allow_access() - Package: @{pkg}');
+
+        // If not a protected package just allow access without server check
+        if (this.isNotProtectedPackage(pkg.name)) {
+            this.logger.debug({ packageName: pkg.name }, 'Auth::allow_access() - (No Check) Access Allowed: @{packageName}');
+            callback(null, true);
+            return;
+        }
+
+        // Check with server if access is allowed
         try {
-            const response = await this.fleetbaseClient.post('auth/check-access', { identity: user.name });
+            this.logger.debug(
+                { packageName: pkg.name, identity: user.name, groups: user.groups },
+                'Auth::allow_access() Request Params: { identity: @{identity}, package: @{packageName}, groups: @{groups} }'
+            );
+            const response = await this.fleetbaseClient.post('auth/check-access', { identity: user.name, package: pkg.name, groups: user.groups });
             this.logger.debug({ response: response.data }, 'Auth::allow_access() - Response from Fleetbase: @{response}');
             const { allowed } = response.data;
             this.logger.debug({ allowed }, 'Auth::allow_access() - Allowed: @{allowed}');
@@ -88,7 +101,7 @@ export default class FleetbaseAuthPlugin implements IPluginAuth<Config> {
         this.logger.debug({ user }, 'Auth::allow_publish() - User: @{user}');
         this.logger.debug({ pkg }, 'Auth::allow_publish() - Package: @{pkg}');
         try {
-            const response = await this.fleetbaseClient.post('auth/check-publish', { identity: user.name, package: pkg.name });
+            const response = await this.fleetbaseClient.post('auth/check-publish', { identity: user.name, package: pkg.name, groups: user.groups });
             this.logger.debug({ response: response.data }, 'Auth::allow_publish() - Response from Fleetbase: @{response}');
             const { allowed } = response.data;
             this.logger.debug({ allowed }, 'Auth::allow_publish() - Allowed: @{allowed}');

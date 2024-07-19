@@ -1,6 +1,6 @@
 {
     "name": "@fleetbase/verdaccio-fleetbase-auth",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "description": "Authentication to verdaccio for Fleetbase extension developers.",
     "keywords": [
         "verdaccio",
